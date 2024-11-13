@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+hatio_todo.db
+creds.py
+secret.py
+idea.drawio
