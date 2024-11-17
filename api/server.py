@@ -9,8 +9,8 @@ now_Timestamp : int = int(datetime.now().timestamp())
 app = FastAPI()
 
 #============================================================
-# Pydantic Models 
-
+# Pydantic Models - Schema
+#============================================================
 class LoginInfo(BaseModel):
     userinput : str
     password : str
@@ -33,9 +33,11 @@ class TodoInfo(BaseModel):
     cd : int = now_Timestamp
     ud : int = now_Timestamp
 
+
+
 #============================================================
 # Functions 
-
+#============================================================
 def hash_pass(userPass:str) -> str:
     pswd = userPass.encode('utf-8')
     return bcrypt.hashpw(pswd,bcrypt.gensalt())
@@ -45,12 +47,13 @@ def verify_pass(userPass:str, hashedPass:str) -> bool:
     return bcrypt.checkpw(pswd,hashedPass)
 
 def verify_uid(uid:str) -> bool:
-    
     verifyUID(uid)
+
+
 
 #============================================================
 # HTTP methods 
-
+#============================================================
 @app.get("/")
 async def connection():
     return {
