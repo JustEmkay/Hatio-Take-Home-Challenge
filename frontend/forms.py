@@ -208,7 +208,7 @@ def todoList(todos: str)-> None:
             info = fr""" :blue[Created on: **{timeStampToDate(i['created_date'])}** \
                Updated on: **{timeStampToDate(i['created_date'])}**]"""
             
-            if st.checkbox( f"~{i['description']}~", key= i['tid'], help= info )
+            if st.checkbox( f"~{i['description']}~", key= i['tid'], help= info ):
                 st.write('not completed')
     
     
