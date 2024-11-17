@@ -1,4 +1,4 @@
-import sqlite3
+import sqlite3, uuid
 from datetime import datetime
 from pathlib import Path
 from pprint import pprint
@@ -14,6 +14,7 @@ def createTables() -> bool:
     
     #============================================================
     #USERS TABLE
+    #============================================================
     try:
         cursor.execute( ''' CREATE TABLE IF NOT EXISTS users(
             uid TEXT    PRIMARY KEY,
@@ -28,6 +29,7 @@ def createTables() -> bool:
     
     #============================================================
     #PROJECTS TABLE        
+    #============================================================
     try:
         cursor.execute( ''' CREATE TABLE IF NOT EXISTS projects(
             pid TEXT    PRIMARY KEY,
@@ -44,7 +46,8 @@ def createTables() -> bool:
         
     
     #============================================================
-    #USERS TODOS        
+    #USERS TODOS
+    #============================================================       
     try:
         cursor.execute( ''' CREATE TABLE IF NOT EXISTS todos(
             tid TEXT    PRIMARY KEY,
@@ -66,6 +69,7 @@ def check_tables() -> bool:
       
     #============================================================
     #RETURN ALL TABLES IN DB 
+    #============================================================
     cursor.execute( " SELECT name FROM sqlite_master WHERE type='table' " )
     result = [ _[0] for _ in cursor.fetchall() ]
     
@@ -84,7 +88,8 @@ def insertUser(**registerInfo) -> bool:
     
     try:
         #============================================================
-        #ADD USER     
+        #ADD USER
+        #============================================================ 
         cursor.execute( ''' INSERT INTO users(uid, username, email,
                        password) VALUES(?,?,?,?)''',(registerInfo['uid'],
                        registerInfo['username'], registerInfo['email'],
@@ -109,6 +114,7 @@ def checkUser(userInput:str) -> bool:
     try:
         #============================================================
         #verify if user Exists
+        #============================================================
         cursor.execute( f''' SELECT 1 FROM users WHERE username = ?
                        OR email = ? ''', (userInput,userInput,) )
         
@@ -125,10 +131,9 @@ def checkUser(userInput:str) -> bool:
 def getPassword(userInput:str) -> bytes:
     
     try:
-        
         #============================================================
         #RETURN hashed password
-        
+        #============================================================
         cursor.execute( ''' SELECT password FROM users WHERE username = ? OR email =? ''',
                        (userInput,userInput,))
         
@@ -141,10 +146,9 @@ def getPassword(userInput:str) -> bytes:
 
 def getUser(userInput:str) -> dict:
     
-    
     #============================================================
     #RETURN uid,username 
-    
+    #============================================================
     cursor.execute( ''' SELECT uid,username FROM users WHERE username = ? OR email = ? ''',
                    (userInput,userInput,) )  
     result = cursor.fetchone()
@@ -152,35 +156,54 @@ def getUser(userInput:str) -> dict:
         'uid' : result[0],
         'username' : result[1]
     }
+
+def getUserProfile(uid: str) -> dict:
+    
+    #============================================================
+    #RETURN uid, username, email 
+    #============================================================
+    cursor.execute( ''' SELECT username, email FROM users WHERE uid = ? ''',
+                   (uid,) )
+    result = cursor.fetchone()
+    return {
+        'uid': uid,
+        'username': result[0],
+        'email': result[1]
+    }
     
 def getAllProjects(uid:str) -> list[dict]:
-    
+    print("DB-uid:", uid)
     try:
-        
         #============================================================
         #RETURN pid, title, created_date of PROJECTS
+        #============================================================
         cursor.execute(''' SELECT pid,title,created_date from projects WHERE uid=? ''', (uid,))
         user_projects = cursor.fetchall()
                 
         if not user_projects:
             return []
                 
-        projects : list[dict] = [ { 'pid':i[0],'title':i[1],'created_date':i[2] } for i in user_projects ]
+        projects : list[dict] = [ {
+            'pid':i[0],
+            'title':i[1],
+            'created_date':i[2],
+            'todos': getAllTodos(i[0]) } for i in user_projects ]
         
         return projects
         
     except Exception as e:
-        print("Error at getAllProjects: ",e)
+        print("\nError at getAllProjects: ",e)
+        return []
           
-def insertProject(projectInfo) -> bool:
+def insertProject(uid, projectInfo) -> bool:
     
     try:
-        
         #============================================================
         #CREATE NEW PROJECT
+        #============================================================
         cursor.execute( ''' INSERT INTO projects(pid, uid, title, created_date) 
                        VALUES(?,?,?,?)''',
-                       (projectInfo.pid, projectInfo.uid, projectInfo.title,
+                       (projectInfo.pid, uid, projectInfo.title,
                         projectInfo.created_date))
         
         return True
@@ -189,7 +212,7 @@ def insertProject(projectInfo) -> bool:
     except Exception as e:
         print("Error at insertProject: ",e)
         return False
-
+          
 def projectDeleteUpdate(**option) -> bool:
     
     if option['option'] == 'update':
@@ -197,6 +220,7 @@ def projectDeleteUpdate(**option) -> bool:
         try:
             #============================================================
             #UPDATE PROJECT TITLE
+            #============================================================
             cursor.execute( ''' UPDATE projects SET title = ? WHERE
                            uid = ? AND pid = ? ''',
                            (option['title'], option['uid'], option['pid'],  ) )
@@ -212,6 +236,7 @@ def projectDeleteUpdate(**option) -> bool:
         try:
             #============================================================
             #DELETE SPECIFIC PROJECT AND RELATED TODOs
+            #============================================================
             cursor.execute( ''' DELETE FROM projects WHERE uid = ? AND pid = ? ''',
                            (option['uid'], option['pid'], ))
                     
@@ -234,6 +259,7 @@ def getAllTodos(pid:str) -> list[dict]:
     try:
         #============================================================
         #RETURNS tid, description, status, create_date, update_date
+        #============================================================
         cursor.execute( ''' SELECT tid,description, status, created_date,
                        updated_date FROM todos WHERE pid = ?''', (pid,) )
     
@@ -258,11 +284,10 @@ def getAllTodos(pid:str) -> list[dict]:
        
 def insertTodo(todoInfo) -> bool:
     
-    pprint(todoInfo)
-    
     try:
         #============================================================
         #CREATE NEW TODO
+        #============================================================
         cursor.execute( ''' INSERT INTO todos(tid, pid, description,
                        created_date, updated_date) VALUES(?,?,?,?,?)''', (todoInfo.tid,
                         todoInfo.pid, todoInfo.description,
@@ -292,6 +317,7 @@ def todosDeleteUpdate(**options) -> bool:
         try:
             #============================================================
             #UPDATE status AND description 
+            #============================================================
             cursor.execute( f''' UPDATE todos SET {update} WHERE pid = ? AND tid = ? ''',
                            (value, options['pid'], options['tid'],))
             return True
@@ -314,7 +340,26 @@ def todosDeleteUpdate(**options) -> bool:
             return False            
         
 
+
+
+# def fetch_allProject( uid ):
+    
+    
+#     cursor.execute ( ''' 
+                    
+#                     SELECT pid, title, created_date
+#                     From projects
+#                     WHERE uid = ?
+                                    
+#                     ''', (uid,) )
+    
+#     projects_data = cursor.fetchall()
+    
+#     projects : list[dict] = [ { 'pid':i[0],'title':i[1],'created_date':i[2], 'todos': getAllTodos(i[0])  } for i in projects_data ]
+
+#     pprint(projects)
+
+
     
 # if __name__ == '__main__':
-    # createTables()
-    # print(check_tables())
+#     pprint(getAllProjects("7919f62d-a1a9-11ef-9f16-d0c5d3da8dc4"))
