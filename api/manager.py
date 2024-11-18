@@ -197,6 +197,8 @@ def getAllProjects(uid:str) -> list[dict]:
           
 def insertProject(uid, projectInfo) -> bool:
     
+    print( "projectInfo:", projectInfo )
+    
     try:
         #============================================================
         #CREATE NEW PROJECT
