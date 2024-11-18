@@ -64,7 +64,7 @@ def main() -> None:
             if st.button("logout", use_container_width= True):
                 if logout():
                     st.rerun()
-    
+            
     
     if not st.session_state.auth['token']:
         

@@ -36,17 +36,17 @@ def generateOverallSummery( project: dict ) -> dict:
     markdown_str : str = f"""# {project['title']}\n\n"""
     markdown_str += f" **Summary:** {len(tempPending)}/{len(project['todos'])} todos completed \n\n" 
 
-    markdown_str += "### Pending:\n"
+    markdown_str += f"### Pending ({len(tempPending)}):\n"
     for todo in tempPending:
         markdown_str += f"""- [ ] {todo['description']}\n"""
     if not tempPending:
         markdown_str += " *no pending task.* \n"
 
-    markdown_str += "### Completed:\n"
+    markdown_str += f"### Completed ({len(tempCompleted)}):\n"
     for todo in tempCompleted:
         markdown_str += f"""- [x] {todo['description']}\n"""
     if not tempCompleted:
-        markdown_str += " no pending task. "
+        markdown_str += " *no task completed* "
 
     file_name = f"{project['title'].replace(' ', '_').lower()}.md"
 
@@ -160,17 +160,71 @@ def alertDeleteDB( projectID: str, token, projects: dict) -> None:
         
     if cncl.button("cancel", use_container_width=True): 
         st.switch_page("home.py")
-        
-@st.dialog("Gist preview:")
+   
+def downloadButton( filename: str, markdownData: str ) -> None:
+    
+    st.download_button("Download as .md", file_name= filename,
+                    data= markdownData, type='primary',
+                    use_container_width= True,
+                    help= " Download Gist as **.md** ")
+    
+
+@st.dialog("Gist preview 🖼️:" , width='large')
 def ProjectGistPreview( project:dict ) -> None:
     mdData= generateOverallSummery( project )   
     
-    with st.container( border= True ):
+    alert= st.empty()
+    export_option : str = st.radio('Select a export option:',
+                                    ['Download as .md', "Export as Github gist"],
+                                    horizontal= True) 
+    if export_option == "Export as Github gist":
+        expndr = False
+    else: expndr = True
+      
+    with st.expander('*Project summary*',expanded=expndr):
         st.markdown(mdData['markdown'])
+        st.divider()
+        
+        st.write(f"__Filename:__ *:green[{mdData['filename']}]*")
     
-    st.write(mdData['filename'])
+    
+    
+    if export_option == 'Download as .md':
+        downloadButton(mdData['filename'], mdData['markdown'])
+        
+    if export_option == 'Export as Github gist':
+        
+        tIn, gistype = st.columns([0.7, 0.3]) 
+        
+        githubToken = tIn.text_input("Enter Github access token:",
+                                    placeholder= "Copy-paste Accesstoken from Github developer settings",
+                                    type='password')
+        
+        Gtype : bool = gistype.selectbox("Gist isPublic",[True, False])
+        
+        description = st.text_area("Enter Gist description:",
+                                   placeholder='Small descripttion about your gist')
+        
+        if description and githubToken: bttn_status = False
+        else: bttn_status = True
+        
+        if st.button('confirm', key= 'markdownConfirm', use_container_width= True,
+                  type= 'primary', disabled= bttn_status):
+            resp = createGithubGist( githubToken, mdData['filename'],
+                             mdData['markdown'], description, isPublic=Gtype) 
 
-    
+            if resp['status']:
+                with alert.container(border=True):
+                    st.success("Created Successfully!" , icon= "✅")
+                    st.caption("Copy url below to access created Gist")              
+                    st.code(f"{resp['url']}")
+                    downloadButton(mdData['filename'], mdData['markdown'])
+            else:
+                with alert.container(border=True):
+                    st.error("Something went wrong.")
+                    
+                
+
 
 # CREATE PROJECT DIALOG-BOX
 @st.dialog("Create new project",width='large')
