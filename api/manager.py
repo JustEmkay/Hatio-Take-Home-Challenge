@@ -310,7 +310,7 @@ def todosDeleteUpdate(**options) -> bool:
             update : str = f'description = ?'
             value = options['desc']
             
-        if options['status']:
+        if not options['desc']:
             update : str = f"status = ?, updated_date = {options['ud']} "
             value = options['status']
             
@@ -323,8 +323,9 @@ def todosDeleteUpdate(**options) -> bool:
             return True
             
         except Exception as e:
-            print(" Error at todosDeleteUpdate[update]: ",e)
+            print(" Error at todosDeleteUpdate[update]: ",e,)
             return False            
+        
         
     elif options['option'] == 'delete':
         

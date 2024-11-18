@@ -9,7 +9,7 @@ from datetime import datetime, timezone, timedelta
 from pprint import pprint
 
 now_Timestamp : int = int(datetime.now().timestamp())
-exp = datetime.now(timezone.utc) + timedelta(hours=1)
+exp = datetime.now(timezone.utc) + timedelta(hours=8)
 now = datetime.now(timezone.utc)
 
 SECRET_KEY = "76bb3730fcdb94e622e6f570a629337a371a1a68"
@@ -108,7 +108,7 @@ class VerifyUser:
             raise HTTPException(status_code=401, detail='Your token Expired!')
         
         except jwt.exceptions.DecodeError:
-            raise HTTPException(status_code=401, detail='Unauthorized')
+            raise HTTPException(status_code=401, detail='Unauthorized-!')
         
     #=====================
     def headerTokenVal( self, headerStr: str) -> dict:
@@ -218,7 +218,6 @@ async def get_userProfile(Authorization : accessHeaderStr):
 
     return result
 
-
 @app.get("/projects", response_model= list[Projects])
 async def get_projects(Authorization : accessHeaderStr) -> dict:
 
@@ -229,7 +228,6 @@ async def get_projects(Authorization : accessHeaderStr) -> dict:
     
 
     return []
-
 
 @app.post("/projects/create")
 async def create_project( project: ProjectInfo, Authorization: accessHeaderStr ) -> dict:
@@ -247,22 +245,7 @@ async def create_project( project: ProjectInfo, Authorization: accessHeaderStr )
         
         return { 'status': True, 'msg': 'Createtd Project successfully.' }
     return { 'status': False, 'msg': 'Failded to created Project'  }
-    
-    # if verifyUID(project.uid):
-        
-    #     insertProject(project)
-        
-    #     return {
-    #         'status':True,
-    #         'msg': 'Created new project.'
-    #     }
-        
-        
-    # return {
-    #     'status': False,
-    #     'msg': 'Failed to create new project.'
-    # }
-        
+            
 @app.put("/projects/update/{uid}/{pid}")
 async def update_project(uid:str, pid:str, title:str):
     
@@ -279,10 +262,12 @@ async def update_project(uid:str, pid:str, title:str):
         'msg' : 'Failed to update title.'
     }  
        
-@app.delete("/projects/delete/{uid}/{pid}")
-async def delete_project(uid:str, pid:str):
+@app.delete("/projects/delete/{pid}")
+async def delete_project(pid:str , Authorization: accessHeaderStr):
     
-    if projectDeleteUpdate(option='delete', uid=uid,
+    userData = verifyUserService().headerTokenVal(Authorization)
+    
+    if projectDeleteUpdate(option='delete', uid=userData['uid'],
                         pid=pid):
             
         return {
@@ -319,21 +304,30 @@ async def create_todos(todo : TodoInfo):
             'msg' : 'failed to create todo'
         }
 
-@app.put("/todos/update/{pid}/{tid}")
-async def update_todos(pid:str, tid:str, desc:str = None, status : int = None):
+@app.put("/projects/todos/edit/{pid}/{tid}")
+async def update_todos(pid: str, tid: str,
+                       option: str,
+                       Authorization: accessHeaderStr,
+                       desc: str = None,
+                       status: bool = None):
+    userdata = verifyUserService().headerTokenVal(Authorization)
     
-    if todosDeleteUpdate(pid=pid, tid=tid, option='update', desc=desc,
-                         status=status, ud=now_Timestamp):
-        return {   
-            'status' : True,
-            'msg' : 'Updated.'
+    print( pid, "\n", tid, "\n", option, "\n", desc, "\n", status)
+    if userdata:
+        if option == 'update':
+            if todosDeleteUpdate(pid=pid, tid=tid, option='update', desc=desc,
+                                status=status, ud=now_Timestamp):
+                return {   
+                    'status' : True,
+                    'msg' : 'Updated.'
+                }
+        
+        return {
+            'status' : False,
+            'msg' : 'Failed to update.'
         }
     
-    return {
-        'status' : False,
-        'msg' : 'Failed to update.'
-    }
-    
+    return { 'status': True }
 
 @app.post("/test")
 async def test_things(Authorization : accessHeaderStr):
