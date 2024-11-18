@@ -246,10 +246,12 @@ async def create_project( project: ProjectInfo, Authorization: accessHeaderStr )
         return { 'status': True, 'msg': 'Createtd Project successfully.' }
     return { 'status': False, 'msg': 'Failded to created Project'  }
             
-@app.put("/projects/update/{uid}/{pid}")
-async def update_project(uid:str, pid:str, title:str):
+@app.put("/projects/update/{pid}")
+async def update_project( pid: str, title: str, Authorization: accessHeaderStr):
     
-    if projectDeleteUpdate(option='update', uid=uid,
+    userData = verifyUserService().headerTokenVal(Authorization)
+    
+    if projectDeleteUpdate(option='update', uid=userData['uid'],
                         pid=pid, title=title):
         
         return {
@@ -260,8 +262,8 @@ async def update_project(uid:str, pid:str, title:str):
     return {
         'status' : False,
         'msg' : 'Failed to update title.'
-    }  
-       
+    }
+           
 @app.delete("/projects/delete/{pid}")
 async def delete_project(pid:str , Authorization: accessHeaderStr):
     

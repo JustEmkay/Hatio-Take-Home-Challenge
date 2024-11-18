@@ -1,7 +1,6 @@
 import sqlite3, uuid
 from datetime import datetime
 from pathlib import Path
-from pprint import pprint
 
 PATH = "database/hatio_todo.db"
 tables : tuple[str] = ("users", "projects", "todos")
@@ -343,26 +342,3 @@ def todosDeleteUpdate(**options) -> bool:
             return False            
         
 
-
-
-# def fetch_allProject( uid ):
-    
-    
-#     cursor.execute ( ''' 
-                    
-#                     SELECT pid, title, created_date
-#                     From projects
-#                     WHERE uid = ?
-                                    
-#                     ''', (uid,) )
-    
-#     projects_data = cursor.fetchall()
-    
-#     projects : list[dict] = [ { 'pid':i[0],'title':i[1],'created_date':i[2], 'todos': getAllTodos(i[0])  } for i in projects_data ]
-
-#     pprint(projects)
-
-
-    
-# if __name__ == '__main__':
-#     pprint(getAllProjects("7919f62d-a1a9-11ef-9f16-d0c5d3da8dc4"))
