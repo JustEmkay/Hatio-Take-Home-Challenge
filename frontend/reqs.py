@@ -51,8 +51,36 @@ def insertProject( token: str, project ) -> dict:
     res = req.status_code
     if res == 200:
         return req.json()
-    
+
+def deleteProject( token: str, pid: str ) -> dict:
+
+    req = requests.delete(API_URL + f"projects/delete/{pid}",
+                       headers=header(token))
+    res = req.status_code
+    if res == 200:
+        return req.json()
+
   
+def updateTodoStatus( pid: str, tid: str, status: bool, token: str ) -> dict:
+    
+    url = f"projects/todos/edit/{pid}/{tid}?option=update&status={status}"
+    
+    req = requests.put(API_URL + url,
+                       headers=header(token))
+    res = req.status_code
+    if res == 200:
+        return req.json()
+    
+def updateTodoDesc( pid: str, tid: str, desc: bool, token: str ) -> dict:
+    
+    url = f"projects/todos/edit/{pid}/{tid}?option=update&sdesc={desc}"
+    
+    req = requests.put(API_URL + url,
+                       headers=header(token))
+    res = req.status_code
+    if res == 200:
+        return req.json()
+    
   
 # def test(token: dict) -> dict:
 #     req = requests.post(API_URL + "test",headers=header(token))
