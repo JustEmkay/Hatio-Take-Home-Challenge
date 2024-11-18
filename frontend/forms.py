@@ -28,8 +28,32 @@ def validate_password(password : str) -> bool:
 # Function
 #============================================================
 
-def generateOverallSummery(username: str, projects: dict) -> None:
-    ...
+def generateOverallSummery( project: dict ) -> dict:
+    
+    tempPending : list = [ _ for _ in project['todos'] if not _['status'] ]
+    tempCompleted : list = [ _ for _ in project['todos'] if _['status'] ]
+
+    markdown_str : str = f"""# {project['title']}\n\n"""
+    markdown_str += f" **Summary:** {len(tempPending)}/{len(project['todos'])} todos completed \n\n" 
+
+    markdown_str += "### Pending:\n"
+    for todo in tempPending:
+        markdown_str += f"""- [ ] {todo['description']}\n"""
+    if not tempPending:
+        markdown_str += " *no pending task.* \n"
+
+    markdown_str += "### Completed:\n"
+    for todo in tempCompleted:
+        markdown_str += f"""- [x] {todo['description']}\n"""
+    if not tempCompleted:
+        markdown_str += " no pending task. "
+
+    file_name = f"{project['title'].replace(' ', '_').lower()}.md"
+
+    return {
+        'markdown' : markdown_str,
+        'filename' : file_name
+    }
 
 def timeStampToDate( ts: int ) -> str:
     return datetime.fromtimestamp(ts).strftime("%d/%m/%Y %I:%M:%S")
@@ -112,8 +136,41 @@ def loginForm() -> None:
             st.warning(response['msg'])
             
 #============================================================
-# Streamlit Containers
+# Streamlit Containers dialog-box
 #============================================================
+
+@st.dialog("Delete Project!")
+def alertDeleteDB( projectID: str, token, projects: dict) -> None:
+    
+    
+    st.caption("⚠ :red[**Confirming this alert will permentally \
+        remove this project from database.**]")
+    blnk, cnfrm, cncl = st.columns([2,1,1])
+    if cnfrm.button("confirm", use_container_width=True): 
+        
+        delresp = deleteProject( token, projectID )
+        if delresp['status']:
+            
+            st.session_state.projects.pop(
+                returnIndexOfProject(projectID, projects))
+            time.sleep(0.5)
+            st.rerun()
+        else:
+            st.error("Failded to delete Project.")
+        
+    if cncl.button("cancel", use_container_width=True): 
+        st.switch_page("home.py")
+        
+@st.dialog("Gist preview:")
+def ProjectGistPreview( project:dict ) -> None:
+    mdData= generateOverallSummery( project )   
+    
+    with st.container( border= True ):
+        st.markdown(mdData['markdown'])
+    
+    st.write(mdData['filename'])
+
+    
 
 # CREATE PROJECT DIALOG-BOX
 @st.dialog("Create new project",width='large')
@@ -248,22 +305,16 @@ def projectList(projects: dict) -> None:
             blnk, exprt, delt, edit = st.columns([0.25, 0.25, 0.25, 0.25])
             
             if exprt.button('Export', use_container_width=True,
-                            help= "Export as "):
-                ...
+                            help= "Export as ",
+                            key=f"{idx}1"):
+                ProjectGistPreview( project )
             
             if delt.button('Delete', use_container_width=True,
                            help= ":red-background[❌Delete Project]",
-                           key=f"{idx}1"):
-                delresp = deleteProject( st.session_state.auth['token'],
-                                        project['pid'] )
-                if delresp['status']:
-                    
-                    st.session_state.projects.pop(
-                        returnIndexOfProject(project['pid'], projects))
-                    time.sleep(0.5)
-                    st.rerun()
+                           key=f"{idx}2"):
+                alertDeleteDB(project['pid'], st.session_state.auth['token'], projects)
             
-            if edit.button('Edit', use_container_width=True, key=f"{idx}2"):
+            if edit.button('Edit', use_container_width=True, key=f"{idx}3"):
                 editProjectDialogBox( project )
                 
                 
