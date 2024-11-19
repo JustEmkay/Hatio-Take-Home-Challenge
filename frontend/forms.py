@@ -58,11 +58,37 @@ def generateOverallSummery( project: dict ) -> dict:
 def timeStampToDate( ts: int ) -> str:
     return datetime.fromtimestamp(ts).strftime("%d/%m/%Y %I:%M:%S")
 
-def returnIndexOfProject( pid: str, projects: dict  ) -> int:
+@st.cache_data
+def returnIndexOfListDict( idname:str , itemid: str, listDict: list[dict]  ) -> int:
     
-    tempPList : list = [ _['pid'] for _ in projects ] 
-    return tempPList.index(pid)
+    tempList : list = [ _[idname] for _ in listDict ] 
+    return tempList.index(itemid)
 
+#============================================================
+# Logout And clear Session
+#============================================================
+
+def logout() -> bool:
+    st.session_state.update({})
+    st.session_state.update({
+  "projects": [],
+  "tempProject": {
+    "title": None,
+    "todos": []
+  },
+  "auth": {
+    "token": {},
+    "uid": None,
+    "username": None,
+    "email": None
+  },
+  "refreshData": {
+    "project": False
+    
+  }
+})
+    st.rerun()
+   
 #============================================================
 # Streamlit Forms
 # * Login 
@@ -152,7 +178,7 @@ def alertDeleteDB( projectID: str, token, projects: dict) -> None:
         if delresp['status']:
             
             st.session_state.projects.pop(
-                returnIndexOfProject(projectID, projects))
+                returnIndexOfListDict( 'pid', projectID, projects))
             time.sleep(0.5)
             st.rerun()
         else:
@@ -224,8 +250,6 @@ def ProjectGistPreview( project:dict ) -> None:
                     st.error("Something went wrong.")
                     
                 
-
-
 # CREATE PROJECT DIALOG-BOX
 @st.dialog("Create new project",width='large')
 def createProjectDialog(border = True) -> None:
@@ -312,42 +336,61 @@ def todoList(pid: str, todos: str)-> None:
     
     with st.container(border= True):
         
-        st.write( f" **Pending ({len(tempPending)}/{len(todos)}):** " )
-        for i in tempPending:
+        if tempPending or tempCompleted:
             
-            info = fr""" :blue[Created on: **{timeStampToDate(i['created_date'])}** \
-               Updated on: **{timeStampToDate(i['created_date'])}**]"""
+            st.write( f" **Pending ({len(tempPending)}/{len(todos)}):** " )
+            for i in tempPending:
+                
+                info = fr""" :blue[Created on: **{timeStampToDate(i['created_date'])}** \
+                Updated on: **{timeStampToDate(i['updated_date'])}**]"""
+                
+                if st.checkbox( f"{i['description']}", key= i['tid'], help= info ):
+                    res = updateTodoStatus( pid, i['tid'], True, st.session_state.auth['token'] )
+                    if res['status']:
+                        st.session_state.refreshData['project'] = True
+                        st.rerun()
             
-            if st.checkbox( f"{i['description']}", key= i['tid'], help= info ):
-                res = updateTodoStatus( pid, i['tid'], True, st.session_state.auth['token'] )
-                if res['status']:
-                    st.session_state.refreshData['project'] = True
-                    st.rerun()
-        
-        st.write( f" **Completed ({len(tempCompleted)}/{len(todos)}):** " )
-        for i in tempCompleted:
+            if not tempPending:
+                st.write( "*No pending task*" )
             
-            info = fr""" :blue[Created on: **{timeStampToDate(i['created_date'])}** \
-               Updated on: **{timeStampToDate(i['created_date'])}**]"""
             
-            if not st.checkbox( f"~{i['description']}~", key= i['tid'], help= info, value=True ):
-                res = updateTodoStatus( pid, i['tid'], False, st.session_state.auth['token'] )
-                if res['status']:
-                    st.session_state.refreshData['project'] = True
-                    st.rerun()
-    
+            st.write( f" **Completed ({len(tempCompleted)}/{len(todos)}):** " )
+            for i in tempCompleted:
+                
+                info = fr""" :blue[Created on: **{timeStampToDate(i['created_date'])}** \
+                Updated on: **{timeStampToDate(i['updated_date'])}**]"""
+                
+                if not st.checkbox( f"~{i['description']}~", key= i['tid'], help= info, value=True ):
+                    res = updateTodoStatus( pid, i['tid'], False, st.session_state.auth['token'] )
+                    if res['status']:
+                        st.session_state.refreshData['project'] = True
+                        st.rerun()
+            
+            if not tempCompleted:
+                st.write( "*No task Completed*" )
+                
+        elif not tempPending and not tempCompleted :
+            st.write("~Empty project~")
+             
 #PROJECT-LIST
 def projectList(projects: dict) -> None:
     
     Caption = f" **Hello :rainbow[{st.session_state.auth['username']}!]** \
     You have created {len(st.session_state.projects)} projects."
     
-    cptin, nprjt_bttn = st.columns([3,1], vertical_alignment='bottom')
+    cptin, nprjt_bttn, mopt = st.columns([0.7, 0.2, 0.1], 
+                                         gap= 'small',
+                                         vertical_alignment='bottom')
     
     cptin.info( Caption )
     if nprjt_bttn.button('new Project', use_container_width= True,
                          type='primary'):
         createProjectDialog()
+        
+    with mopt.popover("⚙", use_container_width=True):
+        if st.button("logout", use_container_width= True):
+            if logout():
+                st.rerun()
     
     for idx, project in enumerate( projects ):
         
@@ -370,53 +413,136 @@ def projectList(projects: dict) -> None:
             
             if edit.button('Edit', use_container_width=True, key=f"{idx}3"):
                 editProjectDialogBox( project )
-                
-                
-                
-            
+                                       
 #EDIT Project
 @st.dialog("Edit Project", width='large')
 def editProjectDialogBox( project: dict ) -> None:
     
+    #UPDATE PROJECT TITLE
     txt_col, bttn_col = st.columns([3,1], vertical_alignment='bottom')
     
-    title: str= txt_col.text_input( "Enter new project title", value= project['title'] )
+    title: str= txt_col.text_input( "Enter new project title", value= project['title'])
     if bttn_col.button('update',key='updateTile', use_container_width=True):
-        ...
+        res = updateProject( project['pid'], title, st.session_state.auth['token'] )
+        if res['status']:
+            st.success( res['msg'] , icon='✅')    
+            st.session_state.refreshData['project'] = True
+            time.sleep(0.5)
+            st.rerun()
+        else:
+            st.error(res['msg'], icon='❌')
+            
         
+        
+    #UPDATE/EDIT/DELETE TODOS 
     tempPending : list = [ _ for _ in project['todos'] if not _['status'] ]
     tempCompleted : list = [ _ for _ in project['todos'] if _['status'] ]
     
     placeholder = st.empty()
+
+    TodoEditContainer( placeholder, project['pid'], TodoModel() )
+  
+    st.caption( ":blue[info:] :blue-background[*select todos using checkbox to **edit**/**delete**/**update**.*]" ) 
     
     with st.container(border=True):
-        st.write("Pending todos:")
+        
+        st.write("- **Pending todos:**")
         for todo in tempPending:
             
             if st.checkbox( f"{todo['description']}" ):
-                TodoEditContainer(placeholder, todo)
-    
+                TodoEditContainer(placeholder,  project['pid'], TodoModel(tid= todo['tid'],
+                                                         description= todo['description'],
+                                                         status= todo['status']))
+        
+        if not tempPending:
+            st.write( "*No pending task*" )
+        
         st.divider()
     
-        st.write("Completed todos:")
+        st.write("- **Completed todos:**")
         for todo in tempCompleted:
             
             if st.checkbox( f"~{todo['description']}~" ):
-                TodoEditContainer(placeholder, todo)
-      
+                
+                TodoEditContainer(placeholder, project['pid'],  TodoModel(tid= todo['tid'],
+                                                         description= todo['description'],
+                                                         status= todo['status']))
+        
+        if not tempCompleted:
+            st.write( "*No task Completed*" )
+        
 # Selected todo edit container
-def TodoEditContainer(placeholder, todo: dict) -> None:
+def TodoEditContainer(placeholder, pid: str, todo: TodoModel) -> None:
     
     with placeholder.container(border=True):
-                    desc_col, opt_col = st.columns([3,1],
-                                                   vertical_alignment='bottom')
-                    desc = desc_col.text_input("Edit todo description:",
-                                               value=todo['description'])
-                    with opt_col.popover('options', 
-                                         use_container_width=True):
-                        st.button("update todo",key=f"tupBttn{todo['tid']}" ,
-                                  use_container_width=True)
-                        st.button("update status",key=f"tstatBttn{todo['tid']}" ,
-                                  use_container_width=True)
-                        st.button("delete todo",key=f"tdelBttn{todo['tid']}" ,
-                                  use_container_width=True)
+        
+        delStatus = True
+
+        desc = st.text_input( "Create new todo description:",
+        value=todo.description )
+            
+        stsCol, optCol, addCol = st.columns([0.5, 0.25, 0.25])
+        status = stsCol.radio( "Todo status",
+                        options= [ False, True ],
+                        horizontal=True,
+                        index= todo.status,
+                        help="True = Completed | False = Pending" )
+        
+        newTodo = TodoModel(tid= todo.tid,
+                            description= desc,
+                            status= status)
+        
+
+        if not todo.tid: 
+            delStatus= True
+            bttnTitle= 'add todo'
+        else: 
+            delStatus = False
+            bttnTitle= 'update todo'
+
+        addStatus = False
+
+        if optCol.button( 'Delete',
+            disabled=delStatus,
+            use_container_width= True,
+            key= f'TodoDelete{todo.tid}'):
+            res = deleteTodo( pid, todo.tid, st.session_state.auth['token'] )
+            if res['status']:
+                st.success( res['msg'] , icon='✅')    
+                st.session_state.refreshData['project'] = True
+                time.sleep(0.5)
+                st.rerun()
+            else:
+                st.error("Failed to ad new task!",icon="⚠")
+
+
+        if addCol.button( bttnTitle,
+            disabled= addStatus,
+            type="primary",    
+            use_container_width= True):
+            
+            if not newTodo.tid:
+                res = insertTodo( pid, st.session_state.auth['token'], newTodo )
+                if res['status']:    
+                    st.success( res['msg'] , icon='✅')    
+                    st.session_state.refreshData['project'] = True
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error("Failed to ad new task!",icon="⚠")
+                
+            else:
+                st.write("update")
+                res = updateTodoStatusDesc( pid,
+                                           newTodo.tid,
+                                           newTodo.description,
+                                           newTodo.status,
+                                           st.session_state.auth['token']
+                                           )
+                if res['status']:    
+                    st.success( res['msg'] , icon='✅')    
+                    st.session_state.refreshData['project'] = True
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error("Failed to ad new task!",icon="⚠")
