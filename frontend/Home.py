@@ -1,7 +1,8 @@
 import streamlit as st
-from forms import loginForm, createProjectContainer, projectList
+from forms import loginForm, createProjectContainer, projectList, logout
 from reqs import userProfile, userProjects
 import time
+
 
 #============================================================
 # Streamlit Session_states
@@ -29,43 +30,13 @@ if 'refreshData' not in st.session_state:
         'project' : False, 
     }
 
-#============================================================
-# Logout And clear Session
-#============================================================
-
-def logout() -> bool:
-    st.session_state.update({})
-    st.session_state.update({
-  "projects": [],
-  "tempProject": {
-    "title": None,
-    "todos": []
-  },
-  "auth": {
-    "token": {},
-    "uid": None,
-    "username": None,
-    "email": None
-  },
-  "refreshData": {
-    "project": False
-    
-  }
-})
-    
+ 
 #============================================================
 # MAIN - Function
 #============================================================
     
 def main() -> None:
-    
-
-    with st.sidebar:
-            if st.button("logout", use_container_width= True):
-                if logout():
-                    st.rerun()
-            
-    
+        
     if not st.session_state.auth['token']:
         
         loginForm()
@@ -104,4 +75,12 @@ def main() -> None:
 
     
 if __name__ == "__main__":
-    main()
+    
+    try:
+        main()
+    except Exception as e:
+        print("Exception Occured at main:",e)
+        st.warning(e,icon='☠')
+        logout()
+        if st.button('Rerun applcation'):
+            st.rerun()
