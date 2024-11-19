@@ -1,10 +1,17 @@
 import requests
 from cred import API_URL
 
+#============================================================
+# Functions
+#============================================================
 
 def header( token: dict ) -> dict:
     
     return {"Authorization": f"{token['token_type']} {token['access_token']}"}
+
+#============================================================
+# Streamlit HTTP requests
+#============================================================
     
 def get_connection() -> dict:
     
@@ -70,17 +77,42 @@ def updateTodoStatus( pid: str, tid: str, status: bool, token: str ) -> dict:
     if res == 200:
         return req.json()
     
-def updateTodoDesc( pid: str, tid: str, desc: bool, token: str ) -> dict:
+def updateTodoStatusDesc( pid: str, tid: str, desc: str, status: bool, token: str ) -> dict:
     
-    url = f"projects/todos/edit/{pid}/{tid}?option=update&sdesc={desc}"
-    
+    url = f"projects/todos/edit/{pid}/{tid}?desc={desc}&status={status}"
     req = requests.put(API_URL + url,
                        headers=header(token))
     res = req.status_code
     if res == 200:
         return req.json()
     
+def updateProject( pid: str, title: str, token: str  ) -> dict:
+    
+    req = requests.put(API_URL + f"projects/update/{pid}?title={title}",
+                       headers=header(token))
+    res = req.status_code
+    if res == 200:
+        return req.json()
 
+def insertTodo( pid: str, token: str, todo ) -> dict:
+    
+    
+    req = requests.post( API_URL + f"projects/todos/create/{pid}",
+                        headers=header(token),
+                        json=dict(todo))
+    res = req.status_code
+    if res == 200:
+        return req.json()
+    
+def deleteTodo( pid: str, tid: str, token ) -> dict:
+    
+    req = requests.delete( API_URL + f"projects/todos/delete/{pid}/{tid}",
+                          headers=header(token))
+    res = req.status_code
+    if res == 200:
+        print("Deleted todo")
+        return req.json()
+        
 
 #============================================================
 # Github gist Request
@@ -121,12 +153,3 @@ def createGithubGist( access_token: str, filename: str,
             'msg' : resp.text
         }
 
-
-
-
-  
-# def test(token: dict) -> dict:
-#     req = requests.post(API_URL + "test",headers=header(token))
-#     res = req.status_code
-#     if res == 200:
-#         print(req.json())
