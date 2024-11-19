@@ -1,6 +1,12 @@
 import requests
 from cred import API_URL
 
+class HttpException(Exception):
+    def __init__(self, status_code, message=""):
+        self.status_code = status_code
+        self.message = message or f"HTTP Error {status_code}"
+        super().__init__(self.message)
+
 #============================================================
 # Functions
 #============================================================
@@ -42,6 +48,8 @@ def userProfile(token: str) -> dict:
     res = req.status_code
     if res == 200:
         return req.json()
+    elif res == 401:
+        raise HttpException(402, "Token Expired")
 
 def userProjects(token: str) -> dict:
     
@@ -110,9 +118,9 @@ def deleteTodo( pid: str, tid: str, token ) -> dict:
                           headers=header(token))
     res = req.status_code
     if res == 200:
-        print("Deleted todo")
         return req.json()
-        
+    elif res == 401:
+        raise HttpException(402, "Token Expired")
 
 #============================================================
 # Github gist Request

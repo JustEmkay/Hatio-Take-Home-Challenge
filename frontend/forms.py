@@ -83,8 +83,8 @@ def logout() -> bool:
     "email": None
   },
   "refreshData": {
-    "project": False
-    
+    "project": False,
+    'tokenExpr' : False
   }
 })
     st.rerun()
@@ -152,10 +152,10 @@ def loginForm() -> None:
         response = verify_user(login)
 
         if response['status']:
-            st.success("account login activate.")
+            st.success("Account login successful.")
             st.session_state.auth['token'] = response
             with st.spinner('Wait for it...'):
-                time.sleep(5)
+                time.sleep(1)
             st.rerun()
             
         else:
@@ -186,7 +186,20 @@ def alertDeleteDB( projectID: str, token, projects: dict) -> None:
         
     if cncl.button("cancel", use_container_width=True): 
         st.switch_page("home.py")
-   
+
+@st.dialog("logout")
+def alertLogout() -> None :
+    
+    st.caption(":red[Confirming this alert will logout from this account]")
+    
+    if st.button( 'Confirm',key='logoutalertbttn'):
+        
+        with st.spinner('loggin out..'):
+            time.sleep(0.2)
+            if logout():
+                st.rerun()
+    
+ 
 def downloadButton( filename: str, markdownData: str ) -> None:
     
     st.download_button("Download as .md", file_name= filename,
@@ -194,7 +207,6 @@ def downloadButton( filename: str, markdownData: str ) -> None:
                     use_container_width= True,
                     help= " Download Gist as **.md** ")
     
-
 @st.dialog("Gist preview 🖼️:" , width='large')
 def ProjectGistPreview( project:dict ) -> None:
     mdData= generateOverallSummery( project )   
@@ -248,7 +260,8 @@ def ProjectGistPreview( project:dict ) -> None:
             else:
                 with alert.container(border=True):
                     st.error("Something went wrong.")
-                    
+   
+                 
                 
 # CREATE PROJECT DIALOG-BOX
 @st.dialog("Create new project",width='large')
@@ -338,7 +351,7 @@ def todoList(pid: str, todos: str)-> None:
         
         if tempPending or tempCompleted:
             
-            st.write( f" **Pending ({len(tempPending)}/{len(todos)}):** " )
+            st.write( f":material/Pending_Actions: **Pending ({len(tempPending)}/{len(todos)}):** " )
             for i in tempPending:
                 
                 info = fr""" :blue[Created on: **{timeStampToDate(i['created_date'])}** \
@@ -354,7 +367,7 @@ def todoList(pid: str, todos: str)-> None:
                 st.write( "*No pending task*" )
             
             
-            st.write( f" **Completed ({len(tempCompleted)}/{len(todos)}):** " )
+            st.write( f":material/done_all: **Completed ({len(tempCompleted)}/{len(todos)}):** " )
             for i in tempCompleted:
                 
                 info = fr""" :blue[Created on: **{timeStampToDate(i['created_date'])}** \
@@ -383,14 +396,15 @@ def projectList(projects: dict) -> None:
                                          vertical_alignment='bottom')
     
     cptin.info( Caption )
-    if nprjt_bttn.button('new Project', use_container_width= True,
-                         type='primary'):
+    if nprjt_bttn.button(":material/Create_New_Folder:", use_container_width= True,
+                         type='primary', help="Create new project :material/Create_New_Folder:"):
         createProjectDialog()
         
-    with mopt.popover("⚙", use_container_width=True):
-        if st.button("logout", use_container_width= True):
-            if logout():
-                st.rerun()
+    if mopt.button(":material/logout:",
+                use_container_width=True,
+                help="Logout :material/logout:"):
+        alertLogout()
+
     
     for idx, project in enumerate( projects ):
         
