@@ -51,7 +51,7 @@ def main() -> None:
         
     else:
         
-        st.title('Projects.',anchor=False)        
+        st.title('Project Management.',anchor=False)        
         
         if not st.session_state.auth['uid']:
             with st.spinner('Gathering User profile..'):
