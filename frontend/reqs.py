@@ -1,5 +1,6 @@
 import requests
-from cred import API_URL
+
+API_URL = 'http://127.0.0.1:8000/'
 
 class HttpException(Exception):
     def __init__(self, status_code, message=""):
@@ -32,7 +33,9 @@ def verify_user(login) -> dict:
     req = requests.post(API_URL + "login",json=dict(login))
     res = req.status_code 
     if res == 200:
-        return req.json()    
+        return req.json()
+    elif res == 401:
+        raise HttpException(401, "Token Expired")   
   
 def register_user(register) -> dict:
     """ API call to **User Registration** """
@@ -41,6 +44,8 @@ def register_user(register) -> dict:
     res = req.status_code
     if res == 200:
         return req.json()
+    elif res == 401:
+        raise HttpException(401, "Token Expired")
 
 def userProfile(token: str) -> dict:
     
@@ -49,7 +54,7 @@ def userProfile(token: str) -> dict:
     if res == 200:
         return req.json()
     elif res == 401:
-        raise HttpException(402, "Token Expired")
+        raise HttpException(401, "Token Expired")
 
 def userProjects(token: str) -> dict:
     
@@ -84,6 +89,8 @@ def updateTodoStatus( pid: str, tid: str, status: bool, token: str ) -> dict:
     res = req.status_code
     if res == 200:
         return req.json()
+    elif res == 401:
+        raise HttpException(401, "Token Expired")
     
 def updateTodoStatusDesc( pid: str, tid: str, desc: str, status: bool, token: str ) -> dict:
     
@@ -93,6 +100,8 @@ def updateTodoStatusDesc( pid: str, tid: str, desc: str, status: bool, token: st
     res = req.status_code
     if res == 200:
         return req.json()
+    elif res == 401:
+        raise HttpException(401, "Token Expired")
     
 def updateProject( pid: str, title: str, token: str  ) -> dict:
     
@@ -101,9 +110,10 @@ def updateProject( pid: str, title: str, token: str  ) -> dict:
     res = req.status_code
     if res == 200:
         return req.json()
+    elif res == 401:
+        raise HttpException(401, "Token Expired")
 
 def insertTodo( pid: str, token: str, todo ) -> dict:
-    
     
     req = requests.post( API_URL + f"projects/todos/create/{pid}",
                         headers=header(token),
@@ -111,7 +121,9 @@ def insertTodo( pid: str, token: str, todo ) -> dict:
     res = req.status_code
     if res == 200:
         return req.json()
-    
+    elif res == 401:
+        raise HttpException(401, "Token Expired")    
+  
 def deleteTodo( pid: str, tid: str, token ) -> dict:
     
     req = requests.delete( API_URL + f"projects/todos/delete/{pid}/{tid}",
@@ -120,7 +132,7 @@ def deleteTodo( pid: str, tid: str, token ) -> dict:
     if res == 200:
         return req.json()
     elif res == 401:
-        raise HttpException(402, "Token Expired")
+        raise HttpException(401, "Token Expired")
 
 #============================================================
 # Github gist Request

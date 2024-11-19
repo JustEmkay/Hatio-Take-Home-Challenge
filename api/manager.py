@@ -1,5 +1,4 @@
-import sqlite3, uuid
-from datetime import datetime
+import sqlite3
 from pathlib import Path
 
 PATH = "database/hatio_todo.db"
@@ -171,12 +170,11 @@ def getUserProfile(uid: str) -> dict:
     }
     
 def getAllProjects(uid:str) -> list[dict]:
-    print("DB-uid:", uid)
     try:
         #============================================================
         #RETURN pid, title, created_date of PROJECTS
         #============================================================
-        cursor.execute(''' SELECT pid,title,created_date from projects WHERE uid=? ''', (uid,))
+        cursor.execute(''' SELECT pid,title,created_date from projects WHERE uid=? ORDER BY created_date''', (uid,))
         user_projects = cursor.fetchall()
                 
         if not user_projects:

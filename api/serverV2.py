@@ -1,23 +1,22 @@
 from fastapi import FastAPI, HTTPException, Depends, Header
-from fastapi.security import OAuth2PasswordBearer
 import jwt, jwt.exceptions
 import uuid, bcrypt, time
 from typing import Annotated,List
 from pydantic import BaseModel
 from manager import *
 from datetime import datetime, timezone, timedelta
-from pprint import pprint
+
 
 now_Timestamp : int = int(datetime.now().timestamp())
-exp = datetime.now(timezone.utc) + timedelta(hours=12)
+exp = datetime.now(timezone.utc) + timedelta(hours=6) #token expire time
 now = datetime.now(timezone.utc)
 
+# secret keys 
 SECRET_KEY = "76bb3730fcdb94e622e6f570a629337a371a1a68"
 ALGORITHM = "HS256"
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/login')
+
 
 app = FastAPI()
-
 
 #============================================================
 # Pydantic Models - Schema
@@ -127,12 +126,7 @@ def get_verified():
 verifyUserService = Annotated[VerifyUser, Depends(get_verified)]
 accessHeaderStr = Annotated[str, Header()]
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> bool:
-    print(token)
-    valtoken = VerifyUser.validateToken(token)
-    if not valtoken:
-        raise HTTPException(status_code=404, detail="User not found")
-    return True
+
 
 #============================================================
 # Functions 
@@ -165,17 +159,13 @@ async def register_account(register: RegisterInfo) -> dict:
         
     if checkUser(register.username):
         
-        print('username FALSE')
-        
         return {
             'status':False,
             'msg':'Try another username.'
         }
     
     if checkUser(register.email):
-        
-        print('email FALSE')
-        
+
         return {
             'status':False,
             'msg':f'You already have an account.\
@@ -239,10 +229,11 @@ async def create_project( project: ProjectInfo, Authorization: accessHeaderStr )
     
         for todo in project.todos:
             ti = TodoInfo( tid= str(uuid.uuid1()), pid= project.pid, description= todo )
-            print(ti)
             time.sleep(0.5)
-            if insertTodo(ti): print("Created Todo")
-            else: print("Created Todo")
+            if insertTodo(ti):
+                print("Created Todo")
+            else:
+                print("Created Todo")
         
         return { 'status': True, 'msg': 'Createtd Project successfully.' }
     return { 'status': False, 'msg': 'Failded to created Project'  }
@@ -294,8 +285,7 @@ async def get_todos(pid:str):
     
 @app.post("/projects/todos/create/{pid}")
 async def create_todos( pid: str, todo: dict , Authorization: accessHeaderStr):
-    print( todo )
-    
+ 
     todoInfo = TodoInfo( pid= pid,
                         description= todo['description'],
                         tid= str(uuid.uuid1()))
@@ -325,8 +315,6 @@ async def update_todos(pid: str, tid: str,
     if userdata:
         if todosDeleteUpdate(pid=pid, tid=tid, option='update', desc=desc,
                             status=status, ud=now_Timestamp):
-            
-            print('deleted todo')
             
             return {   
                 'status' : True,
