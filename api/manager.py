@@ -289,9 +289,9 @@ def insertTodo(todoInfo) -> bool:
         #============================================================
         #CREATE NEW TODO
         #============================================================
-        cursor.execute( ''' INSERT INTO todos(tid, pid, description,
-                       created_date, updated_date) VALUES(?,?,?,?,?)''', (todoInfo.tid,
-                        todoInfo.pid, todoInfo.description,
+        cursor.execute( ''' INSERT INTO todos(tid, pid, description, status,
+                       created_date, updated_date) VALUES(?,?,?,?,?,?)''', (todoInfo.tid,
+                        todoInfo.pid, todoInfo.description, todoInfo.status,
                         todoInfo.cd, todoInfo.ud,) )
         
         return True
@@ -307,17 +307,32 @@ def todosDeleteUpdate(**options) -> bool:
         update : str = ''
         value : None = None
         
-        if options['desc']:
+        if options['desc'] and options['status'] != None:
+            
+            try:
+                #============================================================
+                #UPDATE status AND description 
+                #============================================================
+                cursor.execute( f''' UPDATE todos SET description= ?, status= ?, updated_date = ? WHERE pid = ? AND tid = ? ''',
+                            (options['desc'], options['status'], options['ud'], options['pid'], options['tid'],))
+                return True
+                
+            except Exception as e:
+                print(" Error at todosDeleteUpdate[update]: ",e,)
+                return False            
+        
+        
+        if options['desc'] != None:
             update : str = f'description = ?'
             value = options['desc']
             
-        if not options['desc']:
+        if options['status'] != None:
             update : str = f"status = ?, updated_date = {options['ud']} "
             value = options['status']
             
         try:
             #============================================================
-            #UPDATE status AND description 
+            #UPDATE status OR description 
             #============================================================
             cursor.execute( f''' UPDATE todos SET {update} WHERE pid = ? AND tid = ? ''',
                            (value, options['pid'], options['tid'],))

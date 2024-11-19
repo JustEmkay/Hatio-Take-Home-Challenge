@@ -9,7 +9,7 @@ from datetime import datetime, timezone, timedelta
 from pprint import pprint
 
 now_Timestamp : int = int(datetime.now().timestamp())
-exp = datetime.now(timezone.utc) + timedelta(hours=8)
+exp = datetime.now(timezone.utc) + timedelta(hours=12)
 now = datetime.now(timezone.utc)
 
 SECRET_KEY = "76bb3730fcdb94e622e6f570a629337a371a1a68"
@@ -38,11 +38,12 @@ class ProjectInfo(BaseModel):
     created_date : int = now_Timestamp
 
 class TodoInfo(BaseModel):
-    pid : str
-    description : str
-    tid : str = None
-    cd : int = now_Timestamp
-    ud : int = now_Timestamp
+    pid: str
+    description: str
+    tid: str= None
+    cd: int= now_Timestamp
+    ud: int= now_Timestamp
+    status: bool= False
 
 class Profile(BaseModel):
     uid : str
@@ -291,45 +292,68 @@ async def get_todos(pid:str):
         'todos' : todos
     }
     
-@app.post("/todos/create")
-async def create_todos(todo : TodoInfo):
+@app.post("/projects/todos/create/{pid}")
+async def create_todos( pid: str, todo: dict , Authorization: accessHeaderStr):
+    print( todo )
     
-    if insertTodo(todo):
-        
+    todoInfo = TodoInfo( pid= pid,
+                        description= todo['description'],
+                        tid= str(uuid.uuid1()))
+    
+    userData = verifyUserService().headerTokenVal(Authorization)
+    if userData['uid']:
+        if insertTodo(todoInfo):
+            
+            return {
+                'status':True,
+                'msg' : 'created todo successfully'
+            }
+            
         return {
-            'status':True,
-            'msg' : 'created todo successfully'
-        }
-        
-    return {
-            'status':False,
-            'msg' : 'failed to create todo'
-        }
+                'status':False,
+                'msg' : 'failed to create todo'
+            }
 
 @app.put("/projects/todos/edit/{pid}/{tid}")
 async def update_todos(pid: str, tid: str,
-                       option: str,
                        Authorization: accessHeaderStr,
                        desc: str = None,
                        status: bool = None):
+    
     userdata = verifyUserService().headerTokenVal(Authorization)
     
-    print( pid, "\n", tid, "\n", option, "\n", desc, "\n", status)
     if userdata:
-        if option == 'update':
-            if todosDeleteUpdate(pid=pid, tid=tid, option='update', desc=desc,
-                                status=status, ud=now_Timestamp):
-                return {   
-                    'status' : True,
-                    'msg' : 'Updated.'
-                }
-        
-        return {
-            'status' : False,
-            'msg' : 'Failed to update.'
-        }
+        if todosDeleteUpdate(pid=pid, tid=tid, option='update', desc=desc,
+                            status=status, ud=now_Timestamp):
+            
+            print('deleted todo')
+            
+            return {   
+                'status' : True,
+                'msg' : 'Updated.'
+            }
+
+    return {
+        'status' : False,
+        'msg' : 'Failed to update.'
+    }
+
+@app.delete("/projects/todos/delete/{pid}/{tid}")
+async def delete_todo( pid: str, tid: str, Authorization: accessHeaderStr):
     
-    return { 'status': True }
+    userdata = verifyUserService().headerTokenVal(Authorization)
+    if userdata['uid']:
+        if todosDeleteUpdate(pid=pid, tid=tid, option='delete'):
+            return {
+                'status': True,
+                'msg' : 'Deletion successful.'
+            }
+    return {
+                'status': False,
+                'msg' : 'Failed to delete todo.'
+    }
+    
+
 
 @app.post("/test")
 async def test_things(Authorization : accessHeaderStr):
