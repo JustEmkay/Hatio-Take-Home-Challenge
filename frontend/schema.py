@@ -13,3 +13,8 @@ class registrationInfo(BaseModel):
 class Project(BaseModel):
     title : str
     todos : list
+    
+class TodoModel(BaseModel):
+    tid: str | None = None
+    description: str | None = None
+    status: bool = 0
