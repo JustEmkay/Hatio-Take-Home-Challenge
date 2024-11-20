@@ -129,8 +129,8 @@ def loginForm() -> None:
     
     st.title("Login",anchor=False)
     
-    userInput = st.text_input('Enter Username/Email:',value='manu')
-    password = st.text_input("Enter your password:",value='123456789',
+    userInput = st.text_input('Username/Email:',value='', placeholder='Enter your username... e.g- manu')
+    password = st.text_input("Enter your password:",value='', placeholder='Enter your password.. e.g- 123456789',
                              type='password')
     blnk, su, sn = st.columns([2,1,1])
     
@@ -236,6 +236,7 @@ def ProjectGistPreview( project:dict ) -> None:
         
         githubToken = tIn.text_input("Enter Github access token:",
                                     placeholder= "Copy-paste Accesstoken from Github developer settings",
+                                    help= " info: [How to generate Github access token](https://www.geeksforgeeks.org/how-to-generate-personal-access-token-in-github/) "
                                     type='password')
         
         Gtype : bool = gistype.selectbox("Gist isPublic",[True, False])
@@ -383,7 +384,7 @@ def todoList(pid: str, todos: str)-> None:
                 st.write( "*No task Completed*" )
                 
         elif not tempPending and not tempCompleted :
-            st.write("~Empty project~")
+            st.write(":grey[*Empty project*]")
              
 #PROJECT-LIST
 def projectList(projects: dict) -> None:
