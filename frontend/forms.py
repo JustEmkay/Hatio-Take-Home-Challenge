@@ -236,7 +236,7 @@ def ProjectGistPreview( project:dict ) -> None:
         
         githubToken = tIn.text_input("Enter Github access token:",
                                     placeholder= "Copy-paste Accesstoken from Github developer settings",
-                                    help= " info: [How to generate Github access token](https://www.geeksforgeeks.org/how-to-generate-personal-access-token-in-github/) "
+                                    help= " info: [How to generate Github access token](https://www.geeksforgeeks.org/how-to-generate-personal-access-token-in-github/) ",
                                     type='password')
         
         Gtype : bool = gistype.selectbox("Gist isPublic",[True, False])
