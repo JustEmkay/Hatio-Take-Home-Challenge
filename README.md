@@ -74,8 +74,13 @@ streamlit run home.py
 
 * Export your project summary as a GitHub gist or download it as a markdown file.
 
+
+* https://github.com/user-attachments/assets/7f5e20f2-a67e-4606-b821-92c131df8534
+
+* gist api resquest Code:
 ```
 def createGithubGist(access_token: str, filename: str, content: str, description: str, isPublic: bool) -> dict:
+    # return html_url and id of created gist.
 
     url = "https://api.github.com/gists"
     
