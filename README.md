@@ -1,7 +1,8 @@
 
 
-# Project Management Application
-This project is a web-based application for managing projects and tasks (todos). Users can create projects, manage todos, and export project summaries as GitHub gists or markdown files.
+# Project Management Application (Take-Home-Challenge)
+This project is a web-based application for managing projects and tasks (todos) as the part of Recruitment process of 
+**Hatio Innovations Private Limited** . Users can create projects, manage todos, and export project summaries as GitHub gists or markdown files.
 
 ## Features
 1. User Authentication:
